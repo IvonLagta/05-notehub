@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebouncedCallback } from "use-debounce";
 import css from "./App.module.css";
 
@@ -9,10 +9,10 @@ import SearchBox from "../SearchBox/SearchBox";
 import Modal from "../Modal/Modal";
 import NoteForm from "../NoteForm/NoteForm";
 
-import { fetchNotes, createNote, deleteNote } from "../../services/noteService";
+import { fetchNotes } from "../../services/noteService";
 
 export default function App() {
-  const [page, setPage] = useState<number>(1);
+  const [page, setPage] = useState<number>(0); // 0-based
   const [search, setSearch] = useState<string>("");
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
@@ -20,32 +20,18 @@ export default function App() {
 
   const debouncedSearch = useDebouncedCallback((value: string) => {
     setSearch(value);
-    setPage(1);
+    setPage(0);
   }, 300);
 
   const { data } = useQuery({
     queryKey: ["notes", page, search],
     queryFn: () =>
       fetchNotes({
-        page,
+        page: page + 1,
         perPage: 12,
         search,
       }),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      setIsOpen(false);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-    },
+    placeholderData: (previousData) => previousData,
   });
 
   const notes = data?.notes ?? [];
@@ -57,7 +43,11 @@ export default function App() {
         <SearchBox value={search} onChange={debouncedSearch} />
 
         {totalPages > 1 && (
-          <Pagination pageCount={totalPages} onPageChange={setPage} />
+          <Pagination
+            pageCount={totalPages}
+            currentPage={page}
+            onPageChange={setPage}
+          />
         )}
 
         <button className={css.button} onClick={() => setIsOpen(true)}>
@@ -65,14 +55,15 @@ export default function App() {
         </button>
       </header>
 
-      {notes.length > 0 && (
-        <NoteList notes={notes} onDelete={deleteMutation.mutate} />
-      )}
+      {notes.length > 0 && <NoteList notes={notes} />}
 
       {isOpen && (
         <Modal onClose={() => setIsOpen(false)}>
           <NoteForm
-            onSubmit={(values) => createMutation.mutate(values)}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ["notes"] });
+              setIsOpen(false);
+            }}
             onCancel={() => setIsOpen(false)}
           />
         </Modal>

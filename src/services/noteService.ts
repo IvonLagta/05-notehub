@@ -2,7 +2,6 @@ import axios, { AxiosResponse } from "axios";
 import { Note } from "../types/note";
 
 const BASE_URL = "https://notehub-public.goit.study/api";
-
 const token = import.meta.env.VITE_NOTEHUB_TOKEN;
 
 const instance = axios.create({
@@ -15,7 +14,6 @@ const instance = axios.create({
 interface FetchNotesResponse {
   notes: Note[];
   totalPages: number;
-  currentPage: number;
 }
 
 interface FetchNotesParams {
@@ -51,12 +49,10 @@ interface CreateNotePayload {
 
 export const createNote = async (payload: CreateNotePayload): Promise<Note> => {
   const response: AxiosResponse<Note> = await instance.post("/notes", payload);
-
   return response.data;
 };
 
 export const deleteNote = async (id: string): Promise<Note> => {
   const response: AxiosResponse<Note> = await instance.delete(`/notes/${id}`);
-
   return response.data;
 };

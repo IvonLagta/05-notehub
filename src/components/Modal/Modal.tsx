@@ -17,10 +17,17 @@ export default function Modal({ children, onClose }: ModalProps) {
       }
     };
 
+    // 🔒 Блокируем скролл
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+
+      // 🔓 Возвращаем скролл обратно
+      document.body.style.overflow = originalOverflow;
     };
   }, [onClose]);
 
